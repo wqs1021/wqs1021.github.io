@@ -2,7 +2,7 @@
 
 一个给自己使用的轻量训练记录小工具，已经部署在 GitHub Pages：
 
-[https://buhouhuii.github.io/personal-workout-log/](https://buhouhuii.github.io/personal-workout-log/)
+[https://wqs1021.github.io/personal-workout-log/](https://wqs1021.github.io/personal-workout-log/)
 
 ## 这个项目解决什么
 
@@ -82,11 +82,11 @@ http://127.0.0.1:8765/
 
 当前仓库：
 
-[https://github.com/buhouhuii/personal-workout-log](https://github.com/buhouhuii/personal-workout-log)
+[https://github.com/wqs1021/personal-workout-log](https://github.com/wqs1021/personal-workout-log)
 
 当前线上页面：
 
-[https://buhouhuii.github.io/personal-workout-log/](https://buhouhuii.github.io/personal-workout-log/)
+[https://wqs1021.github.io/personal-workout-log/](https://wqs1021.github.io/personal-workout-log/)
 
 ## 素材说明
 
