@@ -95,7 +95,7 @@
         <!-- Home View -->
         <div id="view-home" class="flex-1 flex flex-col overflow-hidden relative">
             <div class="bg-white/50 backdrop-blur-sm z-10 py-3 flex-shrink-0">
-                <div id="tabs-container" class="flex space-x-3 px-4 overflow-x-auto no-scrollbar scroll-smooth"></div>
+                <div id="tabs-container" class="grid grid-cols-5 gap-1 mx-4 p-1 bg-gray-100 rounded-2xl"></div>
                 <div class="flex items-center justify-between px-4 mt-3">
                     <button type="button" aria-label="上一周" onclick="App.shiftWeek(-1)" class="w-10 h-10 rounded-full bg-white text-gray-500 border border-gray-100 shadow-sm active-scale">
                         <i class="fa-solid fa-chevron-left text-xs"></i>
@@ -108,14 +108,16 @@
                         <i class="fa-solid fa-chevron-right text-xs"></i>
                     </button>
                 </div>
-                <div class="px-4 mt-3">
-                    <label for="day-status-select" class="sr-only">本次训练状态</label>
-                    <select id="day-status-select" onchange="App.setDayStatus(this.value)" class="w-full h-11 rounded-2xl bg-white border border-gray-200 px-4 text-sm font-bold text-gray-700 shadow-sm">
-                        <option value="normal">状态正常 · 参与递增</option>
-                        <option value="poor">状态不佳 · 仅记录</option>
-                        <option value="deload">主动减载 · 仅记录</option>
-                    </select>
-                    <p id="day-status-hint" class="text-[11px] text-center text-gray-500 mt-1.5">正常训练会参与双重渐进判断</p>
+                <div id="day-status-control" class="px-4 mt-3">
+                    <div class="grid grid-cols-3 gap-1 p-1 bg-gray-100 rounded-2xl" role="group" aria-label="本次训练状态">
+                        <button type="button" data-day-status="normal" aria-pressed="true" onclick="App.setDayStatus('normal')" class="h-10 rounded-xl text-xs font-bold transition-all">正常</button>
+                        <button type="button" data-day-status="poor" aria-pressed="false" onclick="App.setDayStatus('poor')" class="h-10 rounded-xl text-xs font-bold transition-all">状态不佳</button>
+                        <button type="button" data-day-status="deload" aria-pressed="false" onclick="App.setDayStatus('deload')" class="h-10 rounded-xl text-xs font-bold transition-all">减载</button>
+                    </div>
+                    <div class="flex items-center justify-center gap-1.5 mt-2 px-2">
+                        <span id="day-status-dot" class="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></span>
+                        <p id="day-status-hint" class="text-[11px] text-center text-gray-500">计入双重渐进，建议按 RIR 1–2 完成</p>
+                    </div>
                 </div>
             </div>
             <main id="main-list" class="flex-1 scroll-container px-4 py-4 pb-40">
@@ -179,7 +181,7 @@
                     <h2 class="text-2xl font-black text-gray-900">训练计划</h2>
                     <p class="text-sm text-gray-400 mt-1">按自己的器械和状态调整动作。</p>
                 </div>
-                <div id="plan-tabs-container" class="flex space-x-3 overflow-x-auto no-scrollbar scroll-smooth"></div>
+                <div id="plan-tabs-container" class="grid grid-cols-5 gap-1 p-1 bg-gray-100 rounded-2xl"></div>
                 <div class="bg-gray-50 p-4 rounded-3xl border border-gray-100">
                     <div class="flex items-center justify-between mb-4">
                         <div>
@@ -952,9 +954,7 @@
                 const saved = this.persistLocal();
                 this.renderDateControls();
                 this.renderMain();
-                this.showToast(saved
-                    ? (record.status === 'normal' ? '已恢复参与递增' : `${dayStatusLabel(record.status)}：本次仅记录`)
-                    : '状态保存失败，请检查浏览器存储');
+                if (!saved) this.showToast('状态保存失败，请检查浏览器存储');
             },
             switchTab(d) {
                 this.state.selectedDay = d;
@@ -1340,7 +1340,7 @@
             },
             renderTabs() {
                 document.getElementById('tabs-container').innerHTML = [1,2,3,4,5].map(d => 
-                    `<button type="button" onclick="App.switchTab(${d})" class="flex-shrink-0 px-5 py-2 rounded-full text-sm font-bold transition-all ${this.state.selectedDay === d ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 border border-gray-200'}">周${['一','二','三','四','五'][d-1]}</button>`
+                    `<button type="button" onclick="App.switchTab(${d})" class="h-9 rounded-xl text-xs font-bold transition-all ${this.state.selectedDay === d ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}">周${['一','二','三','四','五'][d-1]}</button>`
                 ).join('');
             },
             renderDateControls() {
@@ -1349,20 +1349,39 @@
                 const currentWeek = toDateKey(getWeekStart(new Date()));
                 const status = normalizeDayStatus(this.getSelectedRecord().status);
                 const statusHints = {
-                    normal: '正常训练会参与双重渐进判断',
-                    poor: '本次仍计入历史和统计，但递增算法会跳过',
-                    deload: '减载数据会保留，但不触发加重或减重建议'
+                    normal: '计入双重渐进，建议按 RIR 1–2 完成',
+                    poor: '保留训练记录，但本次不参与递增判断',
+                    deload: '用于恢复，本次不触发加重或减重'
+                };
+                const activeStyles = {
+                    normal: 'bg-blue-600 text-white shadow-sm',
+                    poor: 'bg-amber-500 text-white shadow-sm',
+                    deload: 'bg-slate-700 text-white shadow-sm'
+                };
+                const dotStyles = {
+                    normal: 'bg-blue-500',
+                    poor: 'bg-amber-500',
+                    deload: 'bg-slate-500'
                 };
                 document.getElementById('selected-date-label').innerText = selected.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' });
                 document.getElementById('selected-week-label').innerText = selectedWeek === currentWeek ? "本周" : "点此回到本周";
-                document.getElementById('day-status-select').value = status;
+                const hasExercises = Boolean(this.state.workouts[this.state.selectedDay].exercises.length);
+                document.getElementById('day-status-control').classList.toggle('hidden', !hasExercises);
+                document.querySelectorAll('[data-day-status]').forEach(button => {
+                    const isActive = button.dataset.dayStatus === status;
+                    button.className = `h-10 rounded-xl text-xs font-bold transition-all ${isActive ? activeStyles[status] : 'text-gray-500 hover:text-gray-700'}`;
+                    button.setAttribute('aria-pressed', String(isActive));
+                });
+                document.getElementById('day-status-dot').className = `w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotStyles[status]}`;
                 document.getElementById('day-status-hint').innerText = statusHints[status];
             },
             renderMain() {
                 const data = this.state.workouts[this.state.selectedDay];
                 const c = document.getElementById('main-list');
                 if(!data.exercises.length) {
-                    c.innerHTML = `<div class="bg-white border border-gray-100 rounded-3xl text-center py-14 px-6"><div class="w-12 h-12 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-bed"></i></div><h2 class="font-black text-gray-900">休息日</h2><p class="text-xs text-gray-500 mt-2">需要训练时，可在“计划”中添加动作。</p></div>`;
+                    const weekday = `周${['一','二','三','四','五'][this.state.selectedDay - 1]}`;
+                    const emptyTitle = data.title === '休息日' ? '休息日' : '暂无任务';
+                    c.innerHTML = `<div class="min-h-[360px] flex items-center justify-center pb-16"><div class="w-full bg-gradient-to-b from-white to-slate-50 border border-slate-200 rounded-3xl text-center py-10 px-6"><div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-moon text-xl"></i></div><div class="text-[10px] font-bold tracking-widest text-slate-400 mb-2">本次安排</div><h2 class="text-xl font-black text-gray-900">${weekday} · ${emptyTitle}</h2><p class="text-sm text-gray-500 mt-2">今天没有安排训练任务。</p><button type="button" onclick="App.setView('plan')" class="mt-6 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-600 active-scale">调整${weekday}计划</button></div></div>`;
                     return;
                 }
                 const selectedRecord = this.getSelectedRecord();
@@ -1377,9 +1396,7 @@
                     const advice = dayStatus !== 'normal'
                         ? this.getProgressionAdvice(ex, l, dayStatus)
                         : (done ? this.getProgressionAdvice(ex, l) : (lastProgression ? this.getProgressionAdvice(ex, lastProgression.rows) : null));
-                    const adviceColor = advice && advice.kind === 'excluded' ? 'text-slate-500' : 'text-emerald-600';
-                    const adviceIcon = advice && advice.kind === 'excluded' ? 'fa-circle-minus' : 'fa-arrow-trend-up';
-                    const adviceLine = advice ? `<div class="text-[10px] ${adviceColor} mt-1 truncate"><i class="fa-solid ${adviceIcon} mr-1"></i>${escapeHtml(advice.title)}</div>` : '';
+                    const adviceLine = advice && advice.kind !== 'excluded' ? `<div class="text-[10px] text-emerald-600 mt-1 truncate"><i class="fa-solid fa-arrow-trend-up mr-1"></i>${escapeHtml(advice.title)}</div>` : '';
 
                     return `<button type="button" onclick="App.openModal(${i})" class="w-full text-left bg-white p-4 rounded-2xl border ${done ? 'border-green-200' : 'border-gray-100'} flex items-center gap-3 active:scale-[0.98] transition-transform group">
                         <div class="w-11 h-11 rounded-xl ${done ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'} flex items-center justify-center text-base flex-shrink-0"><i class="fa-solid ${safeIcon(ex.icon, ex.type)}"></i></div>
@@ -1391,17 +1408,17 @@
             },
             renderPlan() {
                 document.getElementById('plan-tabs-container').innerHTML = [1,2,3,4,5].map(d => 
-                    `<button type="button" onclick="App.switchPlanDay(${d})" class="flex-shrink-0 px-5 py-2 rounded-full text-sm font-bold transition-all ${this.state.selectedDay === d ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 border border-gray-200'}">周${['一','二','三','四','五'][d-1]}</button>`
+                    `<button type="button" onclick="App.switchPlanDay(${d})" class="h-9 rounded-xl text-xs font-bold transition-all ${this.state.selectedDay === d ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}">周${['一','二','三','四','五'][d-1]}</button>`
                 ).join('');
 
                 const day = this.state.workouts[this.state.selectedDay];
                 document.getElementById('plan-day-title').innerText = day.title;
-                document.getElementById('plan-day-count').innerText = day.exercises.length ? `${day.exercises.length} 个动作` : '休息日，可添加轻量恢复内容';
+                document.getElementById('plan-day-count').innerText = day.exercises.length ? `${day.exercises.length} 个动作` : '0 个动作 · 休息日';
                 this.renderPlanCopyControls();
 
                 const list = document.getElementById('plan-list');
                 if (!day.exercises.length) {
-                    list.innerHTML = `<div class="text-center py-10 text-gray-400 text-sm">今天没有安排动作。</div>`;
+                    list.innerHTML = `<div class="bg-white rounded-2xl border border-gray-100 text-center py-8 px-4"><div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3"><i class="fa-solid fa-moon"></i></div><div class="text-sm font-bold text-gray-700">当天没有动作</div><div class="text-xs text-gray-400 mt-1">保持休息，或点击右上角添加。</div></div>`;
                     return;
                 }
 
