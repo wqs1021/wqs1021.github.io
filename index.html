@@ -2,32 +2,27 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 核心：适配刘海屏和全屏模式 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    
-    <!-- iOS PWA 专属配置 (找回了丢失的这部分) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="博士健身">
+    <meta name="apple-mobile-web-app-title" content="训练日志">
     <meta name="theme-color" content="#f2f2f7">
-    
-    <!-- 桌面图标 -->
+
     <link rel="apple-touch-icon" href="./assets/icon-192.png">
     <link rel="icon" href="./assets/icon-192.png" type="image/png">
     <link rel="manifest" href="./manifest.json">
-    
-    <title>博士健身日志 - 个人版</title>
+
+    <title>训练日志</title>
     <link rel="stylesheet" href="./assets/app.css">
     <link rel="stylesheet" href="./assets/vendor/fontawesome/css/all.min.css">
     <script src="./assets/vendor/chart.umd.min.js"></script>
-    <script src="./assets/vendor/xlsx.full.min.js"></script>
     <style>
         :root {
-            --ios-blue: #007aff;
             --ios-bg: #f2f2f7;
             --safe-top: env(safe-area-inset-top, 20px);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
-            --app-height: 100dvh; 
+            --app-height: 100dvh;
         }
 
         body {
@@ -41,9 +36,6 @@
             width: 100%;
             top: 0;
             left: 0;
-            /* 禁止长按选择，更像App */
-            -webkit-user-select: none;
-            user-select: none;
         }
 
         #app {
@@ -58,7 +50,7 @@
 
         .scroll-container {
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch; 
+            -webkit-overflow-scrolling: touch;
             overscroll-behavior-y: contain;
         }
 
@@ -67,8 +59,14 @@
         input, select, textarea {
             font-size: 16px !important;
             transform: scale(1);
-            -webkit-user-select: text; /* 允许输入框选择文字 */
+            -webkit-user-select: text;
             user-select: text;
+        }
+
+        button { -webkit-user-select: none; user-select: none; }
+        button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+            outline: 3px solid rgba(37, 99, 235, 0.22);
+            outline-offset: 2px;
         }
         
         input:disabled {
@@ -89,18 +87,9 @@
 <body ontouchstart="">
 
     <div id="app">
-        <!-- Header -->
-        <header class="px-6 pb-3 pt-[calc(var(--safe-top)+10px)] bg-white/90 backdrop-blur-md border-b border-gray-200 z-20 flex justify-between items-end flex-shrink-0">
-            <div>
-                <div class="flex items-center space-x-2 mb-1">
-                    <span id="date-display" class="text-blue-600 text-[10px] font-bold uppercase tracking-widest">LOADING...</span>
-                    <div id="local-status" class="w-2 h-2 rounded-full bg-green-500" title="本地缓存已启用"></div>
-                </div>
-                <h1 id="page-title" class="text-2xl font-black tracking-tight text-gray-900">健身日志 Pro</h1>
-            </div>
-            <button aria-label="查看训练提示" onclick="App.showTips()" class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-200 active-scale">
-                <i class="fa-solid fa-user-doctor text-sm"></i>
-            </button>
+        <header class="px-5 pb-3 pt-[calc(var(--safe-top)+10px)] bg-white/90 backdrop-blur-md border-b border-gray-200 z-20 flex-shrink-0">
+            <span id="date-display" class="text-blue-600 text-[10px] font-bold tracking-widest">正在载入</span>
+            <h1 id="page-title" class="text-2xl font-black tracking-tight text-gray-900 mt-1">训练日志</h1>
         </header>
 
         <!-- Home View -->
@@ -108,27 +97,28 @@
             <div class="bg-white/50 backdrop-blur-sm z-10 py-3 flex-shrink-0">
                 <div id="tabs-container" class="flex space-x-3 px-4 overflow-x-auto no-scrollbar scroll-smooth"></div>
                 <div class="flex items-center justify-between px-4 mt-3">
-                    <button aria-label="上一周" onclick="App.shiftWeek(-1)" class="w-10 h-10 rounded-full bg-white text-gray-500 border border-gray-100 shadow-sm active-scale">
+                    <button type="button" aria-label="上一周" onclick="App.shiftWeek(-1)" class="w-10 h-10 rounded-full bg-white text-gray-500 border border-gray-100 shadow-sm active-scale">
                         <i class="fa-solid fa-chevron-left text-xs"></i>
                     </button>
-                    <button onclick="App.goToday()" class="px-4 py-2 rounded-full bg-white border border-gray-100 shadow-sm text-center active-scale">
-                        <div id="selected-date-label" class="text-sm font-black text-gray-900">--</div>
-                        <div id="selected-week-label" class="text-[10px] font-bold text-blue-500 mt-0.5">回到本周</div>
+                    <button type="button" aria-label="回到本周" onclick="App.goToday()" class="px-5 py-2 rounded-2xl bg-white border border-gray-100 shadow-sm text-center active-scale">
+                        <span id="selected-date-label" class="block text-sm font-black text-gray-900">--</span>
+                        <span id="selected-week-label" class="block text-[10px] font-bold text-blue-500 mt-0.5">回到本周</span>
                     </button>
-                    <button aria-label="下一周" onclick="App.shiftWeek(1)" class="w-10 h-10 rounded-full bg-white text-gray-500 border border-gray-100 shadow-sm active-scale">
+                    <button type="button" aria-label="下一周" onclick="App.shiftWeek(1)" class="w-10 h-10 rounded-full bg-white text-gray-500 border border-gray-100 shadow-sm active-scale">
                         <i class="fa-solid fa-chevron-right text-xs"></i>
                     </button>
                 </div>
-                <div class="px-4 mt-2">
-                    <select id="day-status-select" onchange="App.setDayStatus(this.value)" class="w-full h-10 rounded-2xl bg-white border border-gray-100 px-4 text-xs font-bold text-gray-700 shadow-sm">
+                <div class="px-4 mt-3">
+                    <label for="day-status-select" class="sr-only">本次训练状态</label>
+                    <select id="day-status-select" onchange="App.setDayStatus(this.value)" class="w-full h-11 rounded-2xl bg-white border border-gray-200 px-4 text-sm font-bold text-gray-700 shadow-sm">
                         <option value="normal">状态正常 · 参与递增</option>
                         <option value="poor">状态不佳 · 仅记录</option>
                         <option value="deload">主动减载 · 仅记录</option>
                     </select>
-                    <div id="day-status-hint" class="text-[10px] text-center text-gray-400 mt-1">正常训练会参与双重渐进判断</div>
+                    <p id="day-status-hint" class="text-[11px] text-center text-gray-500 mt-1.5">正常训练会参与双重渐进判断</p>
                 </div>
             </div>
-            <main id="main-list" class="flex-1 scroll-container px-4 py-4 space-y-4 pb-40">
+            <main id="main-list" class="flex-1 scroll-container px-4 py-4 pb-40">
                 <div class="animate-pulse space-y-4">
                     <div class="h-24 bg-gray-200 rounded-2xl"></div>
                     <div class="h-24 bg-gray-200 rounded-2xl"></div>
@@ -136,26 +126,21 @@
             </main>
         </div>
 
-        <!-- Stats View -->
-        <div id="view-stats" class="flex-1 hidden scroll-container px-4 py-6 pb-40 bg-white">
-            <div class="space-y-6">
-                <div class="bg-blue-50/50 p-6 rounded-3xl border border-blue-100">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center"><i class="fa-solid fa-chart-simple text-blue-500 mr-2"></i>本周完成度</h3>
-                    <div class="h-64 relative"><canvas id="completionChart"></canvas></div>
-                </div>
-                <div class="bg-gray-50 p-6 rounded-3xl border border-gray-100">
-                    <h3 class="text-lg font-bold text-gray-800 mb-2">博士点评</h3>
-                    <p id="stats-comment" class="text-sm text-gray-500 leading-relaxed">数据加载中...</p>
-                </div>
+        <div id="view-stats" class="flex-1 hidden scroll-container px-4 py-6 pb-40 bg-gray-50">
+            <div class="space-y-5">
                 <div id="weekly-summary" class="grid grid-cols-2 gap-3"></div>
-                <div class="bg-gray-50 p-6 rounded-3xl border border-gray-100">
+                <div class="bg-white p-5 rounded-3xl border border-gray-100">
+                    <h3 class="text-base font-black text-gray-900 mb-4 flex items-center"><i class="fa-solid fa-chart-simple text-blue-500 mr-2"></i>本周完成度</h3>
+                    <div class="h-56 relative"><canvas id="completionChart"></canvas></div>
+                </div>
+                <div class="bg-white p-5 rounded-3xl border border-gray-100">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-bold text-gray-800">月度概览</h3>
                         <span id="month-label" class="text-xs font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full">--</span>
                     </div>
                     <div id="monthly-summary" class="grid grid-cols-2 gap-3"></div>
                 </div>
-                <div class="bg-gray-50 p-6 rounded-3xl border border-gray-100">
+                <div class="bg-white p-5 rounded-3xl border border-gray-100">
                     <div class="flex items-center justify-between gap-3 mb-4">
                         <h3 class="text-lg font-bold text-gray-800 flex-shrink-0">动作趋势</h3>
                         <select id="trend-exercise-select" onchange="App.renderTrendChart()" class="min-w-0 flex-1 h-10 rounded-2xl bg-white px-3 text-xs font-bold border border-gray-100"></select>
@@ -163,33 +148,32 @@
                     <div id="trend-empty" class="hidden text-center py-10 text-sm text-gray-400">暂无趋势数据。</div>
                     <div id="trend-chart-wrap" class="h-64 relative"><canvas id="trendChart"></canvas></div>
                 </div>
-                <div class="bg-gray-50 p-6 rounded-3xl border border-gray-100">
+                <div class="bg-white p-5 rounded-3xl border border-gray-100">
                     <h3 class="text-lg font-bold text-gray-800 mb-3">最近重量</h3>
                     <div id="recent-progress-list" class="space-y-3 text-sm text-gray-600"></div>
                 </div>
                 <div class="pt-4">
-                    <button onclick="App.exportData()" class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-green-200 active:scale-[0.98] transition-all flex items-center justify-center space-x-2">
-                        <i class="fa-solid fa-file-excel"></i><span>导出 Excel 数据</span>
+                    <button type="button" onclick="App.exportData()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold text-base active:scale-[0.98] transition-all flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-file-csv"></i><span>导出 CSV 数据</span>
                     </button>
                     <div class="grid grid-cols-2 gap-3 mt-3">
-                        <button onclick="App.exportBackup()" class="py-3 bg-gray-900 text-white rounded-2xl font-bold text-sm active:scale-[0.98] transition-all flex items-center justify-center space-x-2">
+                        <button type="button" onclick="App.exportBackup()" class="py-3 bg-gray-900 text-white rounded-2xl font-bold text-sm active:scale-[0.98] transition-all flex items-center justify-center space-x-2">
                             <i class="fa-solid fa-download"></i><span>备份 JSON</span>
                         </button>
-                        <button onclick="App.importBackup()" class="py-3 bg-white text-gray-700 rounded-2xl font-bold text-sm border border-gray-200 active:scale-[0.98] transition-all flex items-center justify-center space-x-2">
+                        <button type="button" onclick="App.importBackup()" class="py-3 bg-white text-gray-700 rounded-2xl font-bold text-sm border border-gray-200 active:scale-[0.98] transition-all flex items-center justify-center space-x-2">
                             <i class="fa-solid fa-upload"></i><span>恢复备份</span>
                         </button>
                     </div>
-                    <button onclick="App.clearAllData()" class="w-full mt-3 py-3 bg-red-50 text-red-500 rounded-2xl font-bold text-sm border border-red-100 active:scale-[0.98] transition-all flex items-center justify-center space-x-2">
+                    <button type="button" onclick="App.clearAllData()" class="w-full mt-3 py-3 bg-red-50 text-red-600 rounded-2xl font-bold text-sm border border-red-100 active:scale-[0.98] transition-all flex items-center justify-center space-x-2">
                         <i class="fa-solid fa-trash-can"></i><span>清空本地数据</span>
                     </button>
                     <input id="backup-file-input" class="hidden" type="file" accept="application/json,.json" onchange="App.handleBackupFile(this)">
-                    <p class="text-center text-xs text-gray-400 mt-3">* JSON 可恢复数据，Excel 适合查看和留档</p>
+                    <p class="text-center text-xs text-gray-400 mt-3">JSON 用于恢复，CSV 可用 Excel 打开</p>
                 </div>
             </div>
         </div>
 
-        <!-- Plan View -->
-        <div id="view-plan" class="flex-1 hidden scroll-container px-4 py-6 pb-40 bg-white">
+        <div id="view-plan" class="flex-1 hidden scroll-container px-4 py-6 pb-40 bg-gray-50">
             <div class="space-y-5">
                 <div>
                     <h2 class="text-2xl font-black text-gray-900">训练计划</h2>
@@ -202,7 +186,7 @@
                             <h3 id="plan-day-title" class="text-lg font-black text-gray-900">--</h3>
                             <p id="plan-day-count" class="text-xs text-gray-400 mt-1">--</p>
                         </div>
-                        <button onclick="App.openPlanEditor()" class="w-10 h-10 rounded-full bg-blue-600 text-white shadow-lg shadow-blue-100 active-scale">
+                        <button type="button" aria-label="添加动作" onclick="App.openPlanEditor()" class="w-10 h-10 rounded-full bg-blue-600 text-white active-scale">
                             <i class="fa-solid fa-plus text-sm"></i>
                         </button>
                     </div>
@@ -215,38 +199,36 @@
                     </div>
                     <div class="grid grid-cols-[1fr_auto] gap-2">
                         <select id="plan-copy-target" class="h-11 rounded-2xl bg-white px-3 text-sm font-bold border border-gray-100"></select>
-                        <button onclick="App.copyCurrentPlanToTarget()" class="px-4 h-11 rounded-2xl bg-blue-600 text-white font-bold text-sm active-scale">复制到</button>
+                        <button type="button" onclick="App.copyCurrentPlanToTarget()" class="px-4 h-11 rounded-2xl bg-blue-600 text-white font-bold text-sm active-scale">复制到</button>
                     </div>
                     <div class="grid grid-cols-[1fr_auto] gap-2">
                         <select id="plan-copy-source" class="h-11 rounded-2xl bg-white px-3 text-sm font-bold border border-gray-100"></select>
-                        <button onclick="App.copyPlanFromSource()" class="px-4 h-11 rounded-2xl bg-white text-gray-700 border border-gray-200 font-bold text-sm active-scale">从它复制</button>
+                        <button type="button" onclick="App.copyPlanFromSource()" class="px-4 h-11 rounded-2xl bg-white text-gray-700 border border-gray-200 font-bold text-sm active-scale">从它复制</button>
                     </div>
                 </div>
-                <button onclick="App.resetPlanDay()" class="w-full py-3 bg-white text-red-500 rounded-2xl font-bold text-sm border border-red-100 active:scale-[0.98] transition-all flex items-center justify-center space-x-2">
+                <button type="button" onclick="App.resetPlanDay()" class="w-full py-3 bg-white text-red-600 rounded-2xl font-bold text-sm border border-red-100 active:scale-[0.98] transition-all flex items-center justify-center space-x-2">
                     <i class="fa-solid fa-rotate-left"></i><span>恢复当天默认计划</span>
                 </button>
             </div>
         </div>
 
-        <!-- Tab Bar -->
         <nav class="absolute bottom-0 w-full bg-white/90 backdrop-blur-xl border-t border-gray-200 pb-[calc(var(--safe-bottom)+15px)] pt-3 px-6 flex justify-around items-center z-30">
-            <button onclick="App.setView('home')" class="flex flex-col items-center text-blue-600 active-scale transition-colors w-16" id="nav-home">
+            <button type="button" onclick="App.setView('home')" class="flex flex-col items-center text-blue-600 active-scale transition-colors w-16" id="nav-home">
                 <i class="fa-solid fa-dumbbell text-xl mb-1"></i><span class="text-[10px] font-bold">训练</span>
             </button>
-            <button onclick="App.setView('stats')" class="flex flex-col items-center text-gray-400 active-scale transition-colors w-16" id="nav-stats">
+            <button type="button" onclick="App.setView('stats')" class="flex flex-col items-center text-gray-400 active-scale transition-colors w-16" id="nav-stats">
                 <i class="fa-solid fa-chart-pie text-xl mb-1"></i><span class="text-[10px] font-bold">统计</span>
             </button>
-            <button onclick="App.setView('plan')" class="flex flex-col items-center text-gray-400 active-scale transition-colors w-16" id="nav-plan">
+            <button type="button" onclick="App.setView('plan')" class="flex flex-col items-center text-gray-400 active-scale transition-colors w-16" id="nav-plan">
                 <i class="fa-solid fa-list-check text-xl mb-1"></i><span class="text-[10px] font-bold">计划</span>
             </button>
         </nav>
 
-        <!-- Modal -->
         <div id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" class="fixed inset-0 bg-black/40 hidden transition-opacity duration-300 opacity-0" onclick="if(event.target === this) App.closeModal()">
             <div id="modal-card" class="absolute bottom-0 w-full max-w-[500px] left-1/2 -translate-x-1/2 bg-white rounded-t-[32px] shadow-2xl transform translate-y-full transition-transform duration-300 flex flex-col">
                 <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-[32px] flex-shrink-0">
                     <h3 id="modal-title" class="text-lg font-black text-gray-800">--</h3>
-                    <button aria-label="关闭记录弹窗" onclick="App.closeModal()" class="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center active-scale"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" aria-label="关闭记录弹窗" onclick="App.closeModal()" class="w-9 h-9 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center active-scale"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="scroll-container p-6 space-y-6 flex-1 overflow-y-auto">
                     <div id="rest-timer" class="hidden bg-gray-900 text-white p-4 rounded-2xl items-center gap-3 shadow-lg">
@@ -257,7 +239,7 @@
                         </div>
                         <button type="button" onclick="App.skipRestTimer()" class="px-3 py-2 rounded-xl bg-white/10 text-xs font-bold">跳过</button>
                     </div>
-                    <div id="modal-tips" class="bg-blue-50 p-4 rounded-2xl text-blue-800 text-xs font-medium leading-relaxed border-l-4 border-blue-500"></div>
+                    <div id="modal-tips" class="bg-slate-50 p-4 rounded-2xl text-slate-700 text-xs font-medium leading-relaxed border border-slate-200"></div>
                     <div id="progression-advice" class="hidden p-4 rounded-2xl text-xs leading-relaxed border"></div>
                     <div class="space-y-3">
                         <div class="flex text-[10px] font-bold text-gray-400 px-2 uppercase tracking-wider" id="input-headers">
@@ -269,17 +251,16 @@
                     </div>
                 </div>
                 <div class="p-6 border-t border-gray-100 bg-white flex-shrink-0">
-                    <button onclick="App.saveCurrentLog()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-200 active:scale-[0.98] transition-all">完成并保存</button>
+                    <button type="button" onclick="App.saveCurrentLog()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-base active:scale-[0.98] transition-all">保存记录</button>
                 </div>
             </div>
         </div>
 
-        <!-- Plan Modal -->
         <div id="plan-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="plan-modal-title" class="fixed inset-0 bg-black/40 hidden transition-opacity duration-300 opacity-0 z-[60]" onclick="if(event.target === this) App.closePlanModal()">
             <div id="plan-modal-card" class="absolute bottom-0 w-full max-w-[500px] left-1/2 -translate-x-1/2 bg-white rounded-t-[32px] shadow-2xl transform translate-y-full transition-transform duration-300 flex flex-col max-h-[90%] pb-[calc(var(--safe-bottom)+18px)]">
                 <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-[32px] flex-shrink-0">
                     <h3 id="plan-modal-title" class="text-lg font-black text-gray-800">编辑动作</h3>
-                    <button aria-label="关闭计划弹窗" onclick="App.closePlanModal()" class="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center active-scale"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" aria-label="关闭计划弹窗" onclick="App.closePlanModal()" class="w-9 h-9 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center active-scale"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="scroll-container p-6 space-y-4 flex-1 overflow-y-auto">
                     <label class="block">
@@ -290,7 +271,7 @@
                     </label>
                     <label class="block">
                         <span class="block text-xs font-bold text-gray-400 mb-2">动作名称</span>
-                        <input id="plan-ex-name" class="w-full h-12 rounded-2xl bg-gray-50 px-4 font-bold border border-transparent focus:border-blue-500" placeholder="例如：器械腿推">
+                        <input id="plan-ex-name" type="text" maxlength="100" class="w-full h-12 rounded-2xl bg-gray-50 px-4 font-bold border border-transparent focus:border-blue-500" placeholder="例如：器械腿推">
                     </label>
                     <label class="block">
                         <span class="block text-xs font-bold text-gray-400 mb-2">动作类型</span>
@@ -304,11 +285,11 @@
                     <div class="grid grid-cols-2 gap-3">
                         <label class="block">
                             <span class="block text-xs font-bold text-gray-400 mb-2">目标组数</span>
-                            <input id="plan-ex-sets" type="number" min="1" class="w-full h-12 rounded-2xl bg-gray-50 px-4 font-bold border border-transparent focus:border-blue-500" placeholder="3">
+                            <input id="plan-ex-sets" type="number" min="1" max="20" inputmode="numeric" class="w-full h-12 rounded-2xl bg-gray-50 px-4 font-bold border border-transparent focus:border-blue-500" placeholder="3">
                         </label>
                         <label class="block" id="plan-target-reps-field">
                             <span class="block text-xs font-bold text-gray-400 mb-2">目标次数/时间</span>
-                            <input id="plan-ex-reps" class="w-full h-12 rounded-2xl bg-gray-50 px-4 font-bold border border-transparent focus:border-blue-500" placeholder="12 或 30s">
+                            <input id="plan-ex-reps" type="text" maxlength="30" class="w-full h-12 rounded-2xl bg-gray-50 px-4 font-bold border border-transparent focus:border-blue-500" placeholder="12 或 30s">
                         </label>
                     </div>
                     <div id="plan-progression-fields" class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 space-y-3">
@@ -337,13 +318,13 @@
                     </label>
                 </div>
                 <div class="p-6 border-t border-gray-100 bg-white flex-shrink-0 space-y-3">
-                    <button onclick="App.savePlanExercise()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-200 active:scale-[0.98] transition-all">保存动作</button>
-                    <button id="plan-delete-btn" onclick="App.deletePlanExercise()" class="hidden w-full py-3 bg-red-50 text-red-500 rounded-2xl font-bold text-sm border border-red-100 active:scale-[0.98] transition-all">删除动作</button>
+                    <button type="button" onclick="App.savePlanExercise()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-base active:scale-[0.98] transition-all">保存动作</button>
+                    <button type="button" id="plan-delete-btn" onclick="App.deletePlanExercise()" class="hidden w-full py-3 bg-red-50 text-red-600 rounded-2xl font-bold text-sm border border-red-100 active:scale-[0.98] transition-all">删除动作</button>
                 </div>
             </div>
         </div>
 
-        <div id="toast" class="fixed top-24 left-1/2 -translate-x-1/2 bg-gray-900/95 text-white px-6 py-3 rounded-full text-xs font-bold shadow-2xl pointer-events-none opacity-0 transition-opacity duration-300 z-[100]"><i class="fa-solid fa-circle-check text-green-400 mr-2"></i><span id="toast-msg">操作成功</span></div>
+        <div id="toast" role="status" aria-live="polite" class="fixed top-24 left-1/2 -translate-x-1/2 max-w-[calc(100%_-_32px)] bg-gray-900/95 text-white px-5 py-3 rounded-full text-xs font-bold shadow-2xl pointer-events-none opacity-0 transition-opacity duration-300 z-[100]"><span id="toast-msg">已保存</span></div>
     </div>
 
     <script>
@@ -353,11 +334,13 @@
         window.addEventListener('resize', fixViewportHeight);
         window.addEventListener('orientationchange', fixViewportHeight);
         fixViewportHeight();
-        setInterval(fixViewportHeight, 2000);
 
         const DATA_KEY = 'drlog_gym_pro_daily_v1';
         const LEGACY_DATA_KEY = 'drlog_gym_pro_data';
         const PLAN_KEY = 'drlog_gym_pro_plan_v1';
+        const CARDIO_MODES = ['有氧运动', '椭圆机', '爬楼机', '跑步机爬坡', '跑步机慢跑', '单车'];
+        const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+        let storageAvailable = true;
 
         const SAFE_ICONS = new Set([
             'fa-angles-down', 'fa-arrows-down-to-line', 'fa-arrows-up-to-line', 'fa-bug',
@@ -370,6 +353,37 @@
         function createExerciseId(day = 'custom') {
             if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
             return `${day}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+        }
+
+        function sanitizeExerciseId(value, fallback = createExerciseId()) {
+            const normalized = String(value ?? '')
+                .trim()
+                .replace(/[^a-zA-Z0-9._-]+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '')
+                .slice(0, 100);
+            return normalized && !UNSAFE_OBJECT_KEYS.has(normalized) ? normalized : fallback;
+        }
+
+        function safeStorageRead(key) {
+            try {
+                return localStorage.getItem(key);
+            } catch (error) {
+                storageAvailable = false;
+                console.warn('Local storage read failed', error);
+                return null;
+            }
+        }
+
+        function safeStorageWrite(key, value) {
+            try {
+                localStorage.setItem(key, value);
+                return true;
+            } catch (error) {
+                storageAvailable = false;
+                console.warn('Local storage write failed', error);
+                return false;
+            }
         }
 
         function safeIcon(icon, type = 'weighted') {
@@ -426,6 +440,12 @@
                 .replaceAll('&', '&amp;')
                 .replaceAll('<', '&lt;')
                 .replaceAll('>', '&gt;');
+        }
+
+        function escapeCsvCell(value) {
+            let text = String(value ?? '');
+            if (/^[\t\r\n ]*[=+\-@]/.test(text)) text = `'${text}`;
+            return `"${text.replaceAll('"', '""')}"`;
         }
 
         function cloneData(value) {
@@ -492,7 +512,7 @@
             [1, 2, 3, 4, 5].forEach(day => {
                 base[day].exercises = base[day].exercises.map((ex, index) => ({
                     ...ex,
-                    id: ex.id || `default-${day}-${index}`,
+                    id: sanitizeExerciseId(ex.id, `default-${day}-${index}`),
                     icon: safeIcon(ex.icon, ex.type),
                     ...progressionSettings(ex)
                 }));
@@ -508,7 +528,7 @@
                     color: base[day].color,
                     exercises: Array.isArray(source.exercises) ? source.exercises.slice(0, 100).map((rawExercise, index) => {
                         const ex = isPlainObject(rawExercise) ? rawExercise : {};
-                        const requestedId = typeof ex.id === 'string' && ex.id.trim() ? ex.id.trim().slice(0, 100) : `legacy-${day}-${index}`;
+                        const requestedId = sanitizeExerciseId(ex.id, `legacy-${day}-${index}`);
                         const id = seenIds.has(requestedId) ? createExerciseId(day) : requestedId;
                         seenIds.add(id);
                         const type = ['weighted', 'bodyweight', 'time', 'cardio'].includes(ex.type) ? ex.type : 'weighted';
@@ -580,17 +600,32 @@
             return value !== null && typeof value === 'object' && !Array.isArray(value);
         }
 
+        function sanitizeMetric(value, key) {
+            const limits = { w: 2000, r: 3600, t: 1440, h: 300, c: 10000, rir: 9 };
+            if (value === null || value === undefined || String(value).trim() === '') return '';
+            const number = Number(value);
+            const allowZero = key === 'rir';
+            if (!Number.isFinite(number) || number < 0 || (!allowZero && number === 0)) return '';
+            const bounded = Math.min(number, limits[key]);
+            const rounded = ['r', 'h', 'c', 'rir'].includes(key)
+                ? Math.round(bounded)
+                : Math.round(bounded * 100) / 100;
+            return String(rounded);
+        }
+
         function sanitizeRows(value) {
             if (!Array.isArray(value)) return [];
             return value.slice(0, 20).map(row => {
                 const source = isPlainObject(row) ? row : {};
                 const clean = {};
                 ['w', 'r', 't', 'h', 'c'].forEach(key => {
-                    clean[key] = String(source[key] ?? '').slice(0, 20);
+                    clean[key] = sanitizeMetric(source[key], key);
                 });
-                clean.m = String(source.m ?? '').slice(0, 40);
-                clean.rir = String(source.rir ?? '').slice(0, 4);
-                clean.done = source.done === true || (source.done !== false && ['w', 'r', 't', 'c'].some(key => String(source[key] ?? '').trim()));
+                clean.m = CARDIO_MODES.includes(source.m) ? source.m : '有氧运动';
+                clean.rir = sanitizeMetric(source.rir, 'rir');
+                const hasRecordData = ['w', 'r', 't', 'c'].some(key => clean[key] !== '');
+                const legacyCompletion = !Object.prototype.hasOwnProperty.call(source, 'done');
+                clean.done = hasRecordData && (source.done === true || legacyCompletion);
                 return clean;
             });
         }
@@ -599,7 +634,7 @@
             if (!isPlainObject(value)) return null;
             const type = ['weighted', 'bodyweight', 'time', 'cardio'].includes(value.type) ? value.type : 'weighted';
             return {
-                id: String(value.id || fallbackId).slice(0, 100),
+                id: sanitizeExerciseId(value.id, sanitizeExerciseId(fallbackId)),
                 name: String(value.name || '未命名动作').slice(0, 100),
                 type,
                 detail: String(value.detail || '').slice(0, 500),
@@ -610,10 +645,10 @@
 
         const WORKOUT_DB = {
             1: { title: "胸部 + 三头肌", color: "from-blue-500 to-cyan-500", exercises: [
-                { name: "坐姿推胸机", sets: 4, reps: 12, type: "weighted", icon: "fa-cubes-stacked", detail: "【替代哑铃卧推】调整座椅高度，手柄与胸部中线齐平。向前推起时吐气。这比哑铃更稳。" },
-                { name: "蝴蝶机夹胸", sets: 3, reps: 12, type: "weighted", icon: "fa-users-viewfinder", detail: "【替代哑铃飞鸟】手臂微弯，像抱住一棵大树。挤压胸缝停留1秒。" },
+                { name: "坐姿推胸机", sets: 4, reps: 12, type: "weighted", icon: "fa-cubes-stacked", detail: "调整座椅高度，让手柄与胸部中线齐平。推起时保持肩胛稳定，控制下放。" },
+                { name: "蝴蝶机夹胸", sets: 3, reps: 12, type: "weighted", icon: "fa-users-viewfinder", detail: "手臂保持微弯，向中间夹胸并停留1秒，回放时保持控制。" },
                 { name: "标准俯卧撑", sets: 3, reps: 12, type: "bodyweight", icon: "fa-person-praying", detail: "核心收紧，不要塌腰。如果太累，可做跪姿。" },
-                { name: "龙门架绳索下压", sets: 3, reps: 12, type: "weighted", icon: "fa-arrows-up-to-line", detail: "【替代哑铃臂屈伸】站姿，大臂夹紧身体两侧，只动小臂向下压。" },
+                { name: "龙门架绳索下压", sets: 3, reps: 12, type: "weighted", icon: "fa-arrows-up-to-line", detail: "站稳并固定大臂，只让小臂向下伸展，底部收紧三头肌。" },
                 { name: "有氧运动", sets: 1, reps: "25min", type: "cardio", icon: "fa-heart-pulse", detail: "可选椭圆机、爬楼机、跑步机爬坡等。优先保持稳定心率和可持续节奏。" }
             ]},
             2: { title: "背部 + 二头肌", color: "from-indigo-500 to-purple-500", exercises: [
@@ -624,19 +659,19 @@
                 { name: "有氧运动", sets: 1, reps: "25min", type: "cardio", icon: "fa-heart-pulse", detail: "可选椭圆机、爬楼机、跑步机爬坡等。可以做稳态，也可以做3分钟快+2分钟慢的间歇。" }
             ]},
             3: { title: "下肢腿部", color: "from-orange-500 to-red-500", exercises: [
-                { name: "双手哑铃深蹲", sets: 4, reps: 12, type: "weighted", icon: "fa-weight-hanging", detail: "【核心主项】双手各持一哑铃垂于体侧。背部挺直，屁股向后坐，膝盖指向脚尖。下蹲至大腿平行地面。" },
-                { name: "哑铃箭步蹲", sets: 3, reps: 12, type: "weighted", icon: "fa-person-walking-arrow-right", detail: "双手持哑铃。向前迈步下蹲，后腿膝盖轻触地面。这是单腿力量之王。" },
+                { name: "双手哑铃深蹲", sets: 4, reps: 12, type: "weighted", icon: "fa-weight-hanging", detail: "双手持哑铃垂于体侧，躯干保持稳定，膝盖朝脚尖方向，下蹲到可控深度。" },
+                { name: "哑铃箭步蹲", sets: 3, reps: 12, type: "weighted", icon: "fa-person-walking-arrow-right", detail: "双手持哑铃向前迈步，下蹲时保持前脚踩稳、膝盖方向稳定。" },
                 { name: "坐姿腿屈伸", sets: 3, reps: 12, type: "weighted", icon: "fa-person-walking", detail: "坐在机器上，勾脚尖踢起，大腿前侧收缩停留1秒。" },
-                { name: "哑铃直腿硬拉", sets: 3, reps: 12, type: "weighted", icon: "fa-arrows-down-to-line", detail: "【大腿后侧】双手持哑铃贴着大腿前侧向下滑，腿微弯但不要蹲，感受大腿后侧拉伸，然后臀部发力拉起。" },
+                { name: "哑铃直腿硬拉", sets: 3, reps: 12, type: "weighted", icon: "fa-arrows-down-to-line", detail: "膝盖微弯，髋部向后移动，让哑铃贴近腿部下放；在背部稳定的范围内起身。" },
                 { name: "有氧运动", sets: 1, reps: "20min", type: "cardio", icon: "fa-heart-pulse", detail: "腿日后建议偏恢复：椭圆机轻阻力、慢速爬楼或低坡度快走都可以。" }
             ]},
             4: { title: "休息日", color: "from-gray-400 to-gray-500", exercises: [] },
             5: { title: "肩膀 + 核心", color: "from-emerald-500 to-teal-500", exercises: [
-                { name: "坐姿推肩机", sets: 4, reps: 12, type: "weighted", icon: "fa-up-long", detail: "【替代哑铃推举】非常安全。向上推起，下放至耳朵高度即可。" },
-                { name: "哑铃侧平举", sets: 3, reps: 15, type: "weighted", icon: "fa-hands-asl-interpreting", detail: "小重量！手肘微弯。像倒水一样侧举，勿耸肩。" },
-                { name: "平板支撑", sets: 3, reps: "35s", type: "time", icon: "fa-minus", detail: "夹臀收腹，不要塌腰！坚持！" },
+                { name: "坐姿推肩机", sets: 4, reps: 12, type: "weighted", icon: "fa-up-long", detail: "调整座椅后保持背部贴稳，推起时避免耸肩，下放到舒适且可控的位置。" },
+                { name: "哑铃侧平举", sets: 3, reps: 15, type: "weighted", icon: "fa-hands-asl-interpreting", detail: "使用可控重量，手肘微弯并带动手臂抬起，避免耸肩和借力摆动。" },
+                { name: "平板支撑", sets: 3, reps: "35s", type: "time", icon: "fa-minus", detail: "收紧腹部和臀部，身体保持稳定；动作变形时结束本组。" },
                 { name: "死虫式", sets: 3, reps: 10, type: "bodyweight", icon: "fa-bug", detail: "腰死贴地，手脚对侧慢伸。" },
-                { name: "有氧运动", sets: 1, reps: "25min", type: "cardio", icon: "fa-heart-pulse", detail: "可选椭圆机、爬楼机、跑步机爬坡等。保持心率在140-150左右，按当天体感微调。" }
+                { name: "有氧运动", sets: 1, reps: "25min", type: "cardio", icon: "fa-heart-pulse", detail: "可选椭圆机、爬楼机、跑步机爬坡等，以能够稳定完成的强度为准。" }
             ]}
         };
 
@@ -666,6 +701,7 @@
                 this.loadLocal();
                 this.renderAll();
                 this.registerServiceWorker();
+                if (!storageAvailable) this.showToast('浏览器存储不可用，请检查隐私设置');
                 document.addEventListener('keydown', event => {
                     if (event.key !== 'Escape') return;
                     if (!document.getElementById('plan-modal-overlay').classList.contains('hidden')) this.closePlanModal();
@@ -673,7 +709,7 @@
                 });
             },
             loadPlan() {
-                const saved = localStorage.getItem(PLAN_KEY);
+                const saved = safeStorageRead(PLAN_KEY);
                 if (!saved) return;
                 try {
                     this.state.workouts = normalizeWorkoutPlan(JSON.parse(saved));
@@ -682,18 +718,18 @@
                 }
             },
             savePlan() {
-                localStorage.setItem(PLAN_KEY, JSON.stringify(this.state.workouts));
+                return safeStorageWrite(PLAN_KEY, JSON.stringify(this.state.workouts));
             },
             registerServiceWorker() {
                 if (!('serviceWorker' in navigator)) return;
                 navigator.serviceWorker.register('./service-worker.js').catch(e => console.warn('Service worker registration failed', e));
             },
             loadLocal() {
-                const daily = localStorage.getItem(DATA_KEY);
+                const daily = safeStorageRead(DATA_KEY);
                 if (daily) {
                     try {
                         const parsed = JSON.parse(daily);
-                        this.state.logs = parsed.logsByDate || {};
+                        this.state.logs = isPlainObject(parsed.logsByDate) ? parsed.logsByDate : {};
                         if (this.migrateLogs()) this.persistLocal();
                         return;
                     } catch (e) {
@@ -701,7 +737,7 @@
                     }
                 }
 
-                const legacy = localStorage.getItem(LEGACY_DATA_KEY);
+                const legacy = safeStorageRead(LEGACY_DATA_KEY);
                 if (!legacy) return;
 
                 try {
@@ -719,11 +755,11 @@
                 }
             },
             persistLocal() {
-                localStorage.setItem(DATA_KEY, JSON.stringify({ version: 4, logsByDate: this.state.logs }));
+                return safeStorageWrite(DATA_KEY, JSON.stringify({ version: 4, logsByDate: this.state.logs }));
             },
             snapshotExercise(ex) {
                 return {
-                    id: ex.id,
+                    id: sanitizeExerciseId(ex.id),
                     name: ex.name,
                     type: ex.type,
                     detail: ex.detail || '',
@@ -732,46 +768,45 @@
                 };
             },
             migrateLogs() {
-                let changed = false;
-                Object.keys(this.state.logs).forEach(dateKey => {
-                    const record = this.state.logs[dateKey];
-                    if (!record || typeof record !== 'object') return;
-                    if (!record.entries || typeof record.entries !== 'object' || Array.isArray(record.entries)) record.entries = {};
-                    if (!record.exerciseSnapshots || typeof record.exerciseSnapshots !== 'object') {
-                        record.exerciseSnapshots = {};
-                        changed = true;
-                    }
-                    const normalizedStatus = normalizeDayStatus(record.status);
-                    if (record.status !== normalizedStatus) {
-                        record.status = normalizedStatus;
-                        changed = true;
-                    }
-                    const plan = this.state.workouts[record.day];
-                    if (!plan) return;
-                    Object.keys(record.entries).forEach(key => {
-                        const index = /^\d+$/.test(key) ? Number(key) : -1;
-                        const ex = index >= 0 ? plan.exercises[index] : plan.exercises.find(item => item.id === key);
-                        if (!ex) return;
-                        if (key !== ex.id) {
-                            if (!record.entries[ex.id]) record.entries[ex.id] = record.entries[key];
-                            delete record.entries[key];
-                            changed = true;
-                        }
-                        if (!record.exerciseSnapshots[ex.id]) {
-                            record.exerciseSnapshots[ex.id] = this.snapshotExercise(ex);
-                            changed = true;
-                        }
-                        if (record.version !== 4) {
-                            record.entries[ex.id] = sanitizeRows(record.entries[ex.id]);
-                            changed = true;
-                        }
+                const original = JSON.stringify(this.state.logs);
+                const cleanedLogs = {};
+                Object.keys(this.state.logs).slice(0, 5000).forEach(dateKey => {
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return;
+                    const parsedDate = parseDateKey(dateKey);
+                    if (Number.isNaN(parsedDate.getTime()) || toDateKey(parsedDate) !== dateKey) return;
+                    const record = isPlainObject(this.state.logs[dateKey]) ? this.state.logs[dateKey] : {};
+                    const requestedDay = Number(record.day);
+                    const day = requestedDay >= 1 && requestedDay <= 5 ? requestedDay : getWeekday(parsedDate);
+                    const plan = this.state.workouts[day];
+                    const rawEntries = isPlainObject(record.entries) ? record.entries : {};
+                    const rawSnapshots = isPlainObject(record.exerciseSnapshots) ? record.exerciseSnapshots : {};
+                    const entries = {};
+                    const exerciseSnapshots = {};
+
+                    Object.keys(rawEntries).slice(0, 200).forEach((key, entryIndex) => {
+                        const legacyIndex = /^\d+$/.test(key) ? Number(key) : -1;
+                        const safeKey = sanitizeExerciseId(key, `legacy-entry-${entryIndex}`);
+                        const exercise = legacyIndex >= 0
+                            ? plan && plan.exercises[legacyIndex]
+                            : plan && plan.exercises.find(item => item.id === safeKey);
+                        const targetKey = exercise ? exercise.id : safeKey;
+                        if (UNSAFE_OBJECT_KEYS.has(targetKey) || Object.prototype.hasOwnProperty.call(entries, targetKey)) return;
+                        entries[targetKey] = sanitizeRows(rawEntries[key]);
+                        const snapshot = sanitizeSnapshot(rawSnapshots[key] || rawSnapshots[targetKey], targetKey)
+                            || (exercise ? this.snapshotExercise(exercise) : null);
+                        if (snapshot) exerciseSnapshots[targetKey] = { ...snapshot, id: targetKey };
                     });
-                    if (record.version !== 4) {
-                        record.version = 4;
-                        changed = true;
-                    }
+
+                    cleanedLogs[dateKey] = {
+                        version: 4,
+                        day,
+                        status: normalizeDayStatus(record.status),
+                        entries,
+                        exerciseSnapshots
+                    };
                 });
-                return changed;
+                this.state.logs = cleanedLogs;
+                return JSON.stringify(cleanedLogs) !== original;
             },
             getExerciseRows(record, ex, legacyIndex) {
                 if (!record || !record.entries) return [];
@@ -786,18 +821,10 @@
                 return plan.exercises.find(ex => ex.id === key) || (/^\d+$/.test(key) ? plan.exercises[Number(key)] : null);
             },
             saveData() {
-                this.persistLocal();
-                this.flashLocalStatus();
+                const saved = this.persistLocal();
                 this.renderMain();
                 if (this.state.currentView === 'stats') this.renderStats();
-            },
-            flashLocalStatus() {
-                const dot = document.getElementById('local-status');
-                dot.className = 'w-2 h-2 rounded-full bg-blue-500 animate-pulse';
-                clearTimeout(this.statusTimer);
-                this.statusTimer = setTimeout(() => {
-                    dot.className = 'w-2 h-2 rounded-full bg-green-500';
-                }, 500);
+                return saved;
             },
             getSelectedRecord() {
                 return this.state.logs[this.state.selectedDate] || { day: this.state.selectedDay, status: 'normal', entries: {} };
@@ -922,11 +949,12 @@
             setDayStatus(value) {
                 const record = this.ensureSelectedRecord();
                 record.status = normalizeDayStatus(value);
-                this.persistLocal();
-                this.flashLocalStatus();
+                const saved = this.persistLocal();
                 this.renderDateControls();
                 this.renderMain();
-                this.showToast(record.status === 'normal' ? '已恢复参与递增' : `${dayStatusLabel(record.status)}：本次仅记录`);
+                this.showToast(saved
+                    ? (record.status === 'normal' ? '已恢复参与递增' : `${dayStatusLabel(record.status)}：本次仅记录`)
+                    : '状态保存失败，请检查浏览器存储');
             },
             switchTab(d) {
                 this.state.selectedDay = d;
@@ -947,24 +975,22 @@
             setView(v) {
                 this.state.currentView = v;
                 document.getElementById('view-home').className = v === 'home' ? 'flex-1 flex flex-col overflow-hidden relative' : 'hidden';
-                document.getElementById('view-stats').className = v === 'stats' ? 'flex-1 scroll-container px-4 py-6 pb-40 bg-white' : 'hidden';
-                document.getElementById('view-plan').className = v === 'plan' ? 'flex-1 scroll-container px-4 py-6 pb-40 bg-white' : 'hidden';
+                document.getElementById('view-stats').className = v === 'stats' ? 'flex-1 scroll-container px-4 py-6 pb-40 bg-gray-50' : 'hidden';
+                document.getElementById('view-plan').className = v === 'plan' ? 'flex-1 scroll-container px-4 py-6 pb-40 bg-gray-50' : 'hidden';
                 document.getElementById('nav-home').className = `flex flex-col items-center transition-colors w-16 ${v === 'home' ? 'text-blue-600' : 'text-gray-400'} active-scale`;
                 document.getElementById('nav-stats').className = `flex flex-col items-center transition-colors w-16 ${v === 'stats' ? 'text-blue-600' : 'text-gray-400'} active-scale`;
                 document.getElementById('nav-plan').className = `flex flex-col items-center transition-colors w-16 ${v === 'plan' ? 'text-blue-600' : 'text-gray-400'} active-scale`;
-                document.getElementById('page-title').innerText = v === 'home' ? '健身日志 Pro' : (v === 'stats' ? '数据统计' : '训练计划');
+                document.getElementById('page-title').innerText = v === 'home' ? '训练日志' : (v === 'stats' ? '数据统计' : '训练计划');
                 if(v==='stats') this.renderStats();
                 if(v==='plan') this.renderPlan();
             },
             
-            // --- 智能填充逻辑 (终极修复版 + PWA支持) ---
             setupAutoFill() {
                 const rows = document.querySelectorAll('.set-row');
                 if (rows.length < 2) return;
                 
                 const firstRowInputs = rows[0].querySelectorAll('input, select');
                 firstRowInputs.forEach(input => {
-                    // 防止重复绑定
                     if (input.dataset.hasListener) return;
                     input.dataset.hasListener = 'true';
 
@@ -972,7 +998,6 @@
                     input.addEventListener(eventName, (e) => {
                         const val = e.target.value;
                         let selector = '';
-                        // 确定当前输入的是哪种类型
                         if (input.classList.contains('input-m')) selector = '.input-m';
                         else if (input.classList.contains('input-w')) selector = '.input-w';
                         else if (input.classList.contains('input-r')) selector = '.input-r';
@@ -982,22 +1007,19 @@
                         
                         if (!selector) return;
 
-                        // 遍历后续行
                         const allRows = document.querySelectorAll('.set-row');
                         for (let i = 1; i < allRows.length; i++) {
                             const targetInput = allRows[i].querySelector(selector);
                             if (targetInput) {
-                                // 核心逻辑：如果值为空，或者它已经被标记为“自动填充”，则更新它
                                 if (targetInput.value === '' || targetInput.dataset.autofilled === 'true') {
                                     targetInput.value = val;
-                                    targetInput.dataset.autofilled = 'true'; // 标记为“我在跟随大哥”
+                                    targetInput.dataset.autofilled = 'true';
                                 }
                             }
                         }
                     });
                 });
 
-                // 为后续行绑定“断开跟随”事件
                 for (let i = 1; i < rows.length; i++) {
                     const inputs = rows[i].querySelectorAll('input, select');
                     inputs.forEach(input => {
@@ -1005,70 +1027,68 @@
                         input.dataset.hasBreakListener = 'true';
                         const eventName = input.tagName === 'SELECT' ? 'change' : 'input';
                         input.addEventListener(eventName, () => {
-                            // 只要用户手动摸了一下，就移除跟随标记
                             input.dataset.autofilled = 'false';
                         });
                     });
                 }
             },
 
-            renderSetRow(i, w, r, defaultReps, isBw, isCardio, t, h, c, m, rir = '', done = false) {
+            renderSetRow(i, w, r, defaultReps, isBw, isCardio, t, h, c, m, rir = '', done = false, isTime = false) {
                 const doneClass = done ? 'bg-green-500 text-white border-green-500' : 'bg-white text-gray-300 border-gray-200';
                 const rowClass = done ? 'border-green-200 bg-green-50/60' : 'border-gray-100 bg-gray-50';
                 if (isCardio) {
-                    const mode = m || '有氧运动';
-                    const modes = ['有氧运动', '椭圆机', '爬楼机', '跑步机爬坡', '跑步机慢跑', '单车'];
-                    const modeOptions = modes.map(name => `<option value="${escapeAttr(name)}" ${mode === name ? 'selected' : ''}>${name}</option>`).join('');
+                    const mode = CARDIO_MODES.includes(m) ? m : '有氧运动';
+                    const modeOptions = CARDIO_MODES.map(name => `<option value="${escapeAttr(name)}" ${mode === name ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('');
                     return `<div class="set-row mb-3 rounded-2xl border p-3 ${rowClass}" data-completed="${done}">
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center font-bold text-gray-400 border border-gray-100 text-xs">${i}</div>
                             <select class="input-m flex-1 h-11 rounded-xl bg-white px-3 font-bold text-sm text-gray-800 border border-transparent focus:border-blue-500 transition-all">
                                 ${modeOptions}
                             </select>
-                            <button type="button" aria-label="完成第${i}组" onclick="App.toggleSetComplete(this)" class="set-complete-btn w-11 h-11 rounded-xl border flex items-center justify-center transition-all ${doneClass}"><i class="fa-solid fa-check"></i></button>
+                            <button type="button" aria-label="完成第${i}组" aria-pressed="${done}" onclick="App.toggleSetComplete(this)" class="set-complete-btn w-11 h-11 rounded-xl border flex items-center justify-center transition-all ${doneClass}"><i class="fa-solid fa-check"></i></button>
                         </div>
                         <div class="grid grid-cols-3 gap-2 mt-3">
                             <label class="block">
-                                <span class="block text-[10px] font-bold text-gray-400 mb-1 text-center">时长</span>
-                                <input type="number" class="w-full bg-white h-11 rounded-xl text-center font-bold text-sm input-t focus:bg-white border border-transparent focus:border-blue-500 transition-all" placeholder="Min" value="${escapeAttr(t)}">
+                                <span class="block text-[10px] font-bold text-gray-400 mb-1 text-center">分钟</span>
+                                <input type="number" min="0.1" max="1440" step="0.1" inputmode="decimal" class="w-full bg-white h-11 rounded-xl text-center font-bold text-sm input-t focus:bg-white border border-transparent focus:border-blue-500 transition-all" placeholder="30" value="${escapeAttr(t)}">
                             </label>
                             <label class="block">
                                 <span class="block text-[10px] font-bold text-gray-400 mb-1 text-center">心率</span>
-                                <input type="number" class="w-full bg-white h-11 rounded-xl text-center font-bold text-sm input-h focus:bg-white border border-transparent focus:border-blue-500 transition-all" placeholder="BPM" value="${escapeAttr(h)}">
+                                <input type="number" min="1" max="300" step="1" inputmode="numeric" class="w-full bg-white h-11 rounded-xl text-center font-bold text-sm input-h focus:bg-white border border-transparent focus:border-blue-500 transition-all" placeholder="140" value="${escapeAttr(h)}">
                             </label>
                             <label class="block">
-                                <span class="block text-[10px] font-bold text-gray-400 mb-1 text-center">热量</span>
-                                <input type="number" class="w-full bg-white h-11 rounded-xl text-center font-bold text-sm input-c focus:bg-white border border-transparent focus:border-blue-500 transition-all" placeholder="Kcal" value="${escapeAttr(c)}">
+                                <span class="block text-[10px] font-bold text-gray-400 mb-1 text-center">千卡</span>
+                                <input type="number" min="1" max="10000" step="1" inputmode="numeric" class="w-full bg-white h-11 rounded-xl text-center font-bold text-sm input-c focus:bg-white border border-transparent focus:border-blue-500 transition-all" placeholder="200" value="${escapeAttr(c)}">
                             </label>
                         </div>
                     </div>`;
                 }
-                const wProps = isBw ? 'disabled value="自重" class="w-full bg-gray-100 h-11 rounded-xl text-center font-bold text-gray-400 text-sm border border-transparent input-w"'
-                                    : `value="${escapeAttr(w)}" placeholder="-" class="w-full bg-white h-11 rounded-xl text-center font-bold input-w border border-transparent focus:border-blue-500 transition-all"`;
+                const weightField = isBw ? '' : `<label class="flex-1 min-w-0">
+                            <span class="block text-[9px] font-bold text-gray-400 mb-1 text-center">重量 KG</span>
+                            <input type="number" min="0.01" max="2000" step="0.01" inputmode="decimal" value="${escapeAttr(w)}" placeholder="0" class="w-full bg-white h-11 rounded-xl text-center font-bold input-w border border-transparent focus:border-blue-500 transition-all">
+                        </label>`;
+                const rirField = isTime ? '' : `<label class="w-14 flex-shrink-0">
+                            <span class="block text-[9px] font-bold text-gray-400 mb-1 text-center">RIR</span>
+                            <input type="number" min="0" max="9" step="1" inputmode="numeric" class="w-full bg-white h-11 rounded-xl text-center font-bold input-rir border border-transparent focus:border-blue-500 transition-all" placeholder="2" value="${escapeAttr(rir)}">
+                        </label>`;
 
                 return `<div class="set-row mb-3 rounded-2xl border p-3 ${rowClass}" data-completed="${done}">
                     <div class="flex items-end gap-2">
                         <div class="w-9 h-11 rounded-xl bg-white flex items-center justify-center font-bold text-gray-400 border border-gray-100 flex-shrink-0">${i}</div>
+                        ${weightField}
                         <label class="flex-1 min-w-0">
-                            <span class="block text-[9px] font-bold text-gray-400 mb-1 text-center">${isBw ? '自重' : '重量 KG'}</span>
-                            <input type="text" ${wProps}>
+                            <span class="block text-[9px] font-bold text-gray-400 mb-1 text-center">${isTime ? '秒' : '次数'}</span>
+                            <input type="number" min="1" max="${isTime ? '3600' : '1000'}" step="1" inputmode="numeric" class="w-full bg-white h-11 rounded-xl text-center font-bold input-r border border-transparent focus:border-blue-500 transition-all" placeholder="${escapeAttr(defaultReps)}" value="${escapeAttr(r)}">
                         </label>
-                        <label class="flex-1 min-w-0">
-                            <span class="block text-[9px] font-bold text-gray-400 mb-1 text-center">次数</span>
-                            <input type="number" min="0" class="w-full bg-white h-11 rounded-xl text-center font-bold input-r border border-transparent focus:border-blue-500 transition-all" placeholder="${escapeAttr(defaultReps)}" value="${escapeAttr(r)}">
-                        </label>
-                        <label class="w-14 flex-shrink-0">
-                            <span class="block text-[9px] font-bold text-gray-400 mb-1 text-center">RIR</span>
-                            <input type="number" min="0" max="9" class="w-full bg-white h-11 rounded-xl text-center font-bold input-rir border border-transparent focus:border-blue-500 transition-all" placeholder="2" value="${escapeAttr(rir)}">
-                        </label>
-                        <button type="button" aria-label="完成第${i}组" onclick="App.toggleSetComplete(this)" class="set-complete-btn w-11 h-11 rounded-xl border flex items-center justify-center flex-shrink-0 transition-all ${doneClass}"><i class="fa-solid fa-check"></i></button>
+                        ${rirField}
+                        <button type="button" aria-label="完成第${i}组" aria-pressed="${done}" onclick="App.toggleSetComplete(this)" class="set-complete-btn w-11 h-11 rounded-xl border flex items-center justify-center flex-shrink-0 transition-all ${doneClass}"><i class="fa-solid fa-check"></i></button>
                     </div></div>`;
             },
 
-            addSet(defaultReps, isBw, isCardio) {
+            addSet(defaultReps, isBw, isCardio, isTime) {
                 const wrapper = document.getElementById('add-set-btn-wrapper');
                 const newIndex = document.querySelectorAll('.set-row').length + 1;
-                wrapper.insertAdjacentHTML('beforebegin', this.renderSetRow(newIndex, '', '', defaultReps, isBw, isCardio, '', '', '', '', '', false));
+                wrapper.insertAdjacentHTML('beforebegin', this.renderSetRow(newIndex, '', '', defaultReps, isBw, isCardio, '', '', '', '', '', false, isTime));
                 wrapper.querySelector('span').innerText = `增加一组 (当前${newIndex}组)`;
                 this.setupAutoFill();
                 this.setupProgressionTracking();
@@ -1076,10 +1096,10 @@
             addSetForCurrentExercise() {
                 const ex = this.state.workouts[this.state.selectedDay].exercises[this.state.modalExIdx];
                 if (!ex) return;
-                this.addSet(ex.reps, ex.type === 'bodyweight' || ex.type === 'time', ex.type === 'cardio');
+                this.addSet(ex.reps, ex.type === 'bodyweight' || ex.type === 'time', ex.type === 'cardio', ex.type === 'time');
             },
             readFormRows(ex) {
-                return Array.from(document.querySelectorAll('.set-row')).map(row => {
+                const rows = Array.from(document.querySelectorAll('.set-row')).map(row => {
                     if (ex.type === 'cardio') {
                         return {
                             m: row.querySelector('.input-m').value,
@@ -1090,12 +1110,13 @@
                         };
                     }
                     return {
-                        w: row.querySelector('.input-w').value,
+                        w: row.querySelector('.input-w')?.value || '',
                         r: row.querySelector('.input-r').value,
-                        rir: row.querySelector('.input-rir').value,
+                        rir: row.querySelector('.input-rir')?.value || '',
                         done: row.dataset.completed === 'true'
                     };
                 });
+                return sanitizeRows(rows);
             },
             setupProgressionTracking() {
                 document.querySelectorAll('.set-row input, .set-row select').forEach(input => {
@@ -1136,11 +1157,17 @@
                     const reps = row.querySelector('.input-r');
                     const weight = row.querySelector('.input-w');
                     const duration = row.querySelector('.input-t');
-                    if (ex.type === 'cardio' && !duration.value && !row.querySelector('.input-c').value) {
+                    const invalidInput = Array.from(row.querySelectorAll('input')).find(input => input.value && !input.checkValidity());
+                    if (invalidInput) {
+                        invalidInput.focus();
+                        alert('请填写有效的非负数值。');
+                        return;
+                    }
+                    if (ex.type === 'cardio' && !sanitizeMetric(duration.value, 't') && !sanitizeMetric(row.querySelector('.input-c').value, 'c')) {
                         alert('请先填写有氧时长或热量。');
                         return;
                     }
-                    if (ex.type !== 'cardio' && (!reps.value || (ex.type === 'weighted' && !weight.value))) {
+                    if (ex.type !== 'cardio' && (!sanitizeMetric(reps.value, 'r') || (ex.type === 'weighted' && !sanitizeMetric(weight.value, 'w')))) {
                         alert(ex.type === 'weighted' ? '请先填写重量和次数。' : '请先填写次数或时间。');
                         return;
                     }
@@ -1193,6 +1220,7 @@
             },
 
             openModal(idx) {
+                this.state.lastFocusedElement = document.activeElement;
                 this.state.modalExIdx = idx;
                 const ex = this.state.workouts[this.state.selectedDay].exercises[idx];
                 const selectedRecord = this.getSelectedRecord();
@@ -1206,7 +1234,7 @@
                 const recommendedWeight = lastAdvice && lastAdvice.nextWeight ? lastAdvice.nextWeight : lastWeight;
 
                 document.getElementById('modal-title').innerText = ex.name;
-                document.getElementById('modal-tips').innerHTML = `<i class="fa-solid fa-graduation-cap mr-1"></i> 博士指引：${escapeHtml(ex.detail)}${last ? `<div class="mt-2 pt-2 border-t border-blue-100 text-blue-700"><i class="fa-solid fa-clock-rotate-left mr-1"></i> 上次记录：${escapeHtml(last.summary)} · ${formatShortDate(last.dateKey)}</div>` : ''}`;
+                document.getElementById('modal-tips').innerHTML = `<div class="font-bold text-slate-800 mb-1">动作提示</div>${escapeHtml(ex.detail)}${last ? `<div class="mt-2 pt-2 border-t border-slate-200 text-blue-700"><i class="fa-solid fa-clock-rotate-left mr-1"></i>上次：${escapeHtml(last.summary)} · ${formatShortDate(last.dateKey)}</div>` : ''}`;
                 
                 const isBw = ex.type === 'bodyweight' || ex.type === 'time';
                 const isTime = ex.type === 'time';
@@ -1215,11 +1243,11 @@
                 const headers = document.getElementById('input-headers');
                 if (isCardio) {
                     headers.innerHTML = `
-                        <span class="w-full text-center">有氧方式 / 时长 / 心率 / 热量</span>
+                        <span class="w-full text-center">方式、时长、心率与热量</span>
                     `;
                 } else {
                     headers.innerHTML = `
-                        <span class="w-full text-center">${isTime ? `每组记录时间，完成后点击 ✓` : `目标 ${targetLabel(ex)} 次 · RIR 建议 1–2 · 完成后点击 ✓`}</span>
+                        <span class="w-full text-center">${isTime ? `每组记录秒数，完成后点击 ✓` : `目标 ${targetLabel(ex)} 次 · RIR 1–2 · 完成后点击 ✓`}</span>
                     `;
                 }
 
@@ -1228,11 +1256,11 @@
                 for(let i=1; i<=currentSetsCount; i++) {
                     const l = logs[i-1] || {w: recommendedWeight || '', r:'', t:'', h:'', c:'', m:'', rir:'', done:false};
                     const done = this.isCompletedSet(ex, l);
-                    html += this.renderSetRow(i, l.w, l.r, targetLabel(ex), isBw, isCardio, l.t, l.h, l.c, l.m, l.rir, done);
+                    html += this.renderSetRow(i, l.w, l.r, targetLabel(ex), isBw, isCardio, l.t, l.h, l.c, l.m, l.rir, done, isTime);
                 }
 
                 html += `<div id="add-set-btn-wrapper" class="pt-2">
-                        <button onclick="App.addSetForCurrentExercise()" class="w-full py-3 border-2 border-dashed border-gray-200 text-gray-400 rounded-xl font-bold hover:border-blue-400 hover:text-blue-500 transition-colors flex items-center justify-center space-x-2 active:scale-[0.98]">
+                        <button type="button" onclick="App.addSetForCurrentExercise()" class="w-full py-3 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl font-bold hover:border-blue-400 hover:text-blue-500 transition-colors flex items-center justify-center space-x-2 active:scale-[0.98]">
                             <i class="fa-solid fa-plus"></i><span>增加一组 (当前${currentSetsCount}组)</span>
                         </button>
                     </div>`;
@@ -1241,7 +1269,6 @@
                 const overlay = document.getElementById('modal-overlay');
                 overlay.classList.remove('hidden');
                 
-                // 启用自动填充
                 this.setupAutoFill();
                 this.setupProgressionTracking();
                 const currentAdvice = dayStatus !== 'normal'
@@ -1256,39 +1283,52 @@
                     timer.classList.remove('flex');
                 }
 
-                setTimeout(() => { overlay.classList.remove('opacity-0'); document.getElementById('modal-card').classList.remove('translate-y-full'); }, 10);
+                setTimeout(() => {
+                    overlay.classList.remove('opacity-0');
+                    document.getElementById('modal-card').classList.remove('translate-y-full');
+                    overlay.querySelector('[aria-label="关闭记录弹窗"]')?.focus();
+                }, 10);
             },
             closeModal() {
                 const overlay = document.getElementById('modal-overlay');
                 overlay.classList.add('opacity-0');
                 document.getElementById('modal-card').classList.add('translate-y-full');
-                setTimeout(() => { overlay.classList.add('hidden'); }, 300);
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    this.state.lastFocusedElement?.focus?.();
+                }, 300);
             },
             saveCurrentLog() {
                 const ex = this.state.workouts[this.state.selectedDay].exercises[this.state.modalExIdx];
                 const newData = this.readFormRows(ex);
 
                 const record = this.ensureSelectedRecord();
-                record.entries[ex.id] = newData;
-                record.exerciseSnapshots[ex.id] = this.snapshotExercise(ex);
-                this.saveData();
+                const hasData = newData.some(row => ['w', 'r', 't', 'c'].some(key => row[key] !== ''));
+                if (hasData) {
+                    record.entries[ex.id] = newData;
+                    record.exerciseSnapshots[ex.id] = this.snapshotExercise(ex);
+                } else {
+                    delete record.entries[ex.id];
+                    delete record.exerciseSnapshots[ex.id];
+                }
+                const saved = this.saveData();
+                this.skipRestTimer();
                 this.closeModal();
-                this.showToast();
+                this.showToast(saved ? (hasData ? '训练记录已保存' : '空记录已清除') : '保存失败，请检查浏览器存储');
             },
             clearAllData() {
-                if (!confirm("确定清空所有本地数据？建议先备份 JSON。")) return;
-                if (!confirm("最后确认：清空后无法撤销。")) return;
+                if (!confirm("确定清空全部训练记录？此操作无法撤销，建议先备份 JSON。")) return;
                 this.state.logs = {};
-                this.saveData();
-                this.showToast("本地数据已清空");
+                const saved = this.saveData();
+                this.showToast(saved ? "本地数据已清空" : '清空失败，请检查浏览器存储');
             },
-            showToast(msg = "操作成功") {
+            showToast(msg = "已保存") {
                 document.getElementById('toast-msg').innerText = msg;
                 const t = document.getElementById('toast');
                 t.classList.remove('opacity-0');
-                setTimeout(() => t.classList.add('opacity-0'), 2000);
+                clearTimeout(this.toastTimer);
+                this.toastTimer = setTimeout(() => t.classList.add('opacity-0'), 2200);
             },
-            showTips() { alert("博士寄语：\n器械是新手最好的朋友，轨迹固定，安全高效！"); },
             renderAll() {
                 this.renderTabs();
                 this.renderDateControls();
@@ -1300,7 +1340,7 @@
             },
             renderTabs() {
                 document.getElementById('tabs-container').innerHTML = [1,2,3,4,5].map(d => 
-                    `<button onclick="App.switchTab(${d})" class="flex-shrink-0 px-5 py-2 rounded-full text-sm font-bold transition-all ${this.state.selectedDay === d ? 'bg-black text-white' : 'bg-white text-gray-400 border border-gray-100'}">周${['一','二','三','四','五'][d-1]}</button>`
+                    `<button type="button" onclick="App.switchTab(${d})" class="flex-shrink-0 px-5 py-2 rounded-full text-sm font-bold transition-all ${this.state.selectedDay === d ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 border border-gray-200'}">周${['一','二','三','四','五'][d-1]}</button>`
                 ).join('');
             },
             renderDateControls() {
@@ -1321,13 +1361,17 @@
             renderMain() {
                 const data = this.state.workouts[this.state.selectedDay];
                 const c = document.getElementById('main-list');
-                if(!data.exercises.length) { c.innerHTML = `<div class="text-center py-20 text-gray-400"><h3>休息日</h3><p class="text-xs">好好睡觉</p></div>`; return; }
+                if(!data.exercises.length) {
+                    c.innerHTML = `<div class="bg-white border border-gray-100 rounded-3xl text-center py-14 px-6"><div class="w-12 h-12 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-bed"></i></div><h2 class="font-black text-gray-900">休息日</h2><p class="text-xs text-gray-500 mt-2">需要训练时，可在“计划”中添加动作。</p></div>`;
+                    return;
+                }
                 const selectedRecord = this.getSelectedRecord();
                 const dayStatus = normalizeDayStatus(selectedRecord.status);
-                c.innerHTML = `<div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1 flex items-center"><span class="w-2 h-2 rounded-full bg-gradient-to-r ${data.color} mr-2"></span>${data.title}</div>` + 
-                data.exercises.map((ex, i) => {
+                let completedCount = 0;
+                const cards = data.exercises.map((ex, i) => {
                     const l = this.getExerciseRows(selectedRecord, ex, i);
                     const done = isLogDone(ex, l);
+                    if (done) completedCount++;
                     const last = this.getLastExerciseRecord(this.state.selectedDay, i);
                     const lastProgression = this.getLastProgressionRecord(this.state.selectedDay, i);
                     const advice = dayStatus !== 'normal'
@@ -1337,16 +1381,17 @@
                     const adviceIcon = advice && advice.kind === 'excluded' ? 'fa-circle-minus' : 'fa-arrow-trend-up';
                     const adviceLine = advice ? `<div class="text-[10px] ${adviceColor} mt-1 truncate"><i class="fa-solid ${adviceIcon} mr-1"></i>${escapeHtml(advice.title)}</div>` : '';
 
-                    return `<button type="button" onclick="App.openModal(${i})" class="w-full text-left bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4 mb-4 active:scale-[0.98] transition-transform relative overflow-hidden group">
-                        <div class="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-blue-500 text-lg group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300"><i class="fa-solid ${safeIcon(ex.icon, ex.type)}"></i></div>
-                        <div class="flex-1 min-w-0"><h3 class="font-bold text-gray-800 text-[15px] truncate">${escapeHtml(ex.name)}</h3><div class="text-[10px] text-gray-400 mt-1">${ex.sets}组 × ${escapeHtml(targetLabel(ex))} ${done ? '<span class="text-green-500 ml-2">✓ 已填</span>' : ''}</div>${last ? `<div class="text-[10px] text-blue-500 mt-1 truncate">上次 ${escapeHtml(last.summary)} · ${formatShortDate(last.dateKey)}</div>` : ''}${adviceLine}</div>
-                        <div class="text-gray-200 ${done ? 'text-green-500' : ''}"><i class="fa-solid fa-circle-check text-xl"></i></div>
+                    return `<button type="button" onclick="App.openModal(${i})" class="w-full text-left bg-white p-4 rounded-2xl border ${done ? 'border-green-200' : 'border-gray-100'} flex items-center gap-3 active:scale-[0.98] transition-transform group">
+                        <div class="w-11 h-11 rounded-xl ${done ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'} flex items-center justify-center text-base flex-shrink-0"><i class="fa-solid ${safeIcon(ex.icon, ex.type)}"></i></div>
+                        <div class="flex-1 min-w-0"><h3 class="font-bold text-gray-900 text-[15px] truncate">${escapeHtml(ex.name)}</h3><div class="text-[11px] text-gray-500 mt-1">${ex.sets}组 × ${escapeHtml(targetLabel(ex))}</div>${last ? `<div class="text-[10px] text-blue-600 mt-1 truncate">上次 ${escapeHtml(last.summary)} · ${formatShortDate(last.dateKey)}</div>` : ''}${adviceLine}</div>
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${done ? 'bg-green-500 text-white' : 'bg-gray-50 text-gray-300'}"><i class="fa-solid ${done ? 'fa-check' : 'fa-chevron-right'} text-xs"></i></div>
                     </button>`;
                 }).join('');
+                c.innerHTML = `<div class="flex items-end justify-between px-1 mb-3"><div><p class="text-[10px] font-bold text-gray-400 tracking-widest">本次计划</p><h2 class="text-lg font-black text-gray-900 mt-1">${escapeHtml(data.title)}</h2></div><span class="text-xs font-black ${completedCount === data.exercises.length ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'} px-3 py-1.5 rounded-full">${completedCount}/${data.exercises.length}</span></div><div class="space-y-3">${cards}</div>`;
             },
             renderPlan() {
                 document.getElementById('plan-tabs-container').innerHTML = [1,2,3,4,5].map(d => 
-                    `<button onclick="App.switchPlanDay(${d})" class="flex-shrink-0 px-5 py-2 rounded-full text-sm font-bold transition-all ${this.state.selectedDay === d ? 'bg-black text-white' : 'bg-white text-gray-400 border border-gray-100'}">周${['一','二','三','四','五'][d-1]}</button>`
+                    `<button type="button" onclick="App.switchPlanDay(${d})" class="flex-shrink-0 px-5 py-2 rounded-full text-sm font-bold transition-all ${this.state.selectedDay === d ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 border border-gray-200'}">周${['一','二','三','四','五'][d-1]}</button>`
                 ).join('');
 
                 const day = this.state.workouts[this.state.selectedDay];
@@ -1367,7 +1412,7 @@
                             <div class="font-bold text-gray-900 text-sm truncate">${escapeHtml(ex.name)}</div>
                             <div class="text-[11px] text-gray-400 mt-1">${typeLabel(ex.type)} · ${ex.sets}组 × ${escapeHtml(targetLabel(ex))}</div>
                         </div>
-                        <button aria-label="编辑${escapeAttr(ex.name)}" onclick="App.openPlanEditor(${idx})" class="w-9 h-9 rounded-full bg-gray-50 text-gray-500 active-scale"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button type="button" aria-label="编辑${escapeAttr(ex.name)}" onclick="App.openPlanEditor(${idx})" class="w-9 h-9 rounded-full bg-gray-50 text-gray-500 active-scale"><i class="fa-solid fa-pen text-xs"></i></button>
                     </div>
                 `).join('');
             },
@@ -1400,9 +1445,9 @@
                     title: source.title,
                     exercises: cloneData(source.exercises).map(ex => ({ ...ex, id: createExerciseId(targetDay) }))
                 };
-                this.savePlan();
+                const saved = this.savePlan();
                 this.renderAll();
-                this.showToast('计划已复制');
+                this.showToast(saved ? '计划已复制' : '计划保存失败，请检查浏览器存储');
             },
             copyPlanFromSource() {
                 const sourceDay = Number(document.getElementById('plan-copy-source').value);
@@ -1417,15 +1462,16 @@
                     title: source.title,
                     exercises: cloneData(source.exercises).map(ex => ({ ...ex, id: createExerciseId(this.state.selectedDay) }))
                 };
-                this.savePlan();
+                const saved = this.savePlan();
                 this.renderAll();
-                this.showToast('计划已复制');
+                this.showToast(saved ? '计划已复制' : '计划保存失败，请检查浏览器存储');
             },
             switchPlanDay(day) {
                 this.switchTab(day);
                 this.renderPlan();
             },
             openPlanEditor(idx = null) {
+                this.state.lastFocusedElement = document.activeElement;
                 this.state.planEditIdx = idx;
                 const isEdit = idx !== null && idx !== undefined;
                 const day = this.state.workouts[this.state.selectedDay];
@@ -1452,6 +1498,7 @@
                 setTimeout(() => {
                     overlay.classList.remove('opacity-0');
                     document.getElementById('plan-modal-card').classList.remove('translate-y-full');
+                    overlay.querySelector('[aria-label="关闭计划弹窗"]')?.focus();
                 }, 10);
             },
             renderExerciseLibraryOptions() {
@@ -1488,7 +1535,10 @@
                 const overlay = document.getElementById('plan-modal-overlay');
                 overlay.classList.add('opacity-0');
                 document.getElementById('plan-modal-card').classList.add('translate-y-full');
-                setTimeout(() => overlay.classList.add('hidden'), 300);
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    this.state.lastFocusedElement?.focus?.();
+                }, 300);
             },
             savePlanExercise() {
                 const name = document.getElementById('plan-ex-name').value.trim().slice(0, 100);
@@ -1503,6 +1553,14 @@
 
                 if (!name) {
                     alert('请填写动作名称');
+                    return;
+                }
+                const invalidInput = ['plan-ex-sets', 'plan-ex-rep-min', 'plan-ex-rep-max', 'plan-ex-weight-step']
+                    .map(id => document.getElementById(id))
+                    .find(input => !input.closest('.hidden') && !input.checkValidity());
+                if (invalidInput) {
+                    invalidInput.focus();
+                    alert('请检查组数、次数区间和加重量。');
                     return;
                 }
 
@@ -1526,27 +1584,27 @@
                     day.exercises[this.state.planEditIdx] = exercise;
                 }
 
-                this.savePlan();
+                const saved = this.savePlan();
                 this.closePlanModal();
                 this.renderAll();
-                this.showToast('计划已保存');
+                this.showToast(saved ? '计划已保存' : '计划保存失败，请检查浏览器存储');
             },
             deletePlanExercise() {
                 if (this.state.planEditIdx === null || this.state.planEditIdx === undefined) return;
-                if (!confirm('确定删除这个动作？当天及历史记录里同位置的记录也可能不再对应。')) return;
+                if (!confirm('确定删除这个动作？已有历史记录会继续保留。')) return;
                 this.state.workouts[this.state.selectedDay].exercises.splice(this.state.planEditIdx, 1);
-                this.savePlan();
+                const saved = this.savePlan();
                 this.closePlanModal();
                 this.renderAll();
-                this.showToast('动作已删除');
+                this.showToast(saved ? '动作已删除' : '计划保存失败，请检查浏览器存储');
             },
             resetPlanDay() {
                 const defaultDay = cloneData(WORKOUT_DB[this.state.selectedDay]);
                 if (!confirm(`确定恢复“${defaultDay.title}”的默认计划？`)) return;
-                this.state.workouts[this.state.selectedDay] = defaultDay;
-                this.savePlan();
+                this.state.workouts[this.state.selectedDay] = normalizeWorkoutPlan()[this.state.selectedDay];
+                const saved = this.savePlan();
                 this.renderAll();
-                this.showToast('已恢复默认计划');
+                this.showToast(saved ? '已恢复默认计划' : '计划保存失败，请检查浏览器存储');
             },
             getMonthStats() {
                 const base = parseDateKey(this.state.selectedDate);
@@ -1596,13 +1654,11 @@
                     { label: '训练天数', value: `${monthStats.trainingDays}天`, icon: 'fa-calendar-days' },
                     { label: '完成动作', value: `${monthStats.completed}个`, icon: 'fa-list-check' },
                     { label: '力量组数', value: `${monthStats.strengthSets}组`, icon: 'fa-dumbbell' },
-                    { label: '有氧累计', value: `${monthStats.cardioMinutes}min`, icon: 'fa-heart-pulse' },
-                    { label: '热量记录', value: `${monthStats.cardioKcal}kcal`, icon: 'fa-fire' }
+                    { label: '有氧累计', value: `${monthStats.cardioMinutes}min`, icon: 'fa-heart-pulse' }
                 ].map(item => `
-                    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                        <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-3"><i class="fa-solid ${item.icon} text-sm"></i></div>
-                        <div class="text-xl font-black text-gray-900">${item.value}</div>
-                        <div class="text-[11px] font-bold text-gray-400 mt-1">${item.label}</div>
+                    <div class="bg-gray-50 p-3 rounded-2xl border border-gray-100 flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center flex-shrink-0"><i class="fa-solid ${item.icon} text-sm"></i></div>
+                        <div><div class="text-lg font-black text-gray-900">${item.value}</div><div class="text-[10px] font-bold text-gray-400">${item.label}</div></div>
                     </div>
                 `).join('');
             },
@@ -1624,7 +1680,7 @@
                 const options = this.getTrendOptions();
                 const previous = this.state.trendKey || select.value;
                 select.innerHTML = options.length ? options.map(item =>
-                    `<option value="${item.key}">${escapeHtml(item.label)}</option>`
+                    `<option value="${escapeAttr(item.key)}">${escapeHtml(item.label)}</option>`
                 ).join('') : `<option value="">暂无动作</option>`;
                 this.state.trendKey = options.some(item => item.key === previous) ? previous : (options[0] ? options[0].key : '');
                 select.value = this.state.trendKey;
@@ -1751,9 +1807,6 @@
                 });
 
                 const total = totalExercises ? Math.round((completedExercises / totalExercises) * 100) : 0;
-                document.getElementById('stats-comment').innerText = total > 80 ? "太棒了！这周执行力很稳，继续保持。" : (total > 0 ? "已经开始积累了，下一次训练只要接着填就行。" : "本周还没开始？哪怕只做一个动作也是开始。");
-                if (!days.length) document.getElementById('stats-comment').innerText = '当前计划没有训练动作。';
-
                 document.getElementById('weekly-summary').innerHTML = [
                     { label: '本周完成', value: `${total}%`, icon: 'fa-circle-check' },
                     { label: '训练天数', value: `${trainingDays}天`, icon: 'fa-calendar-check' },
@@ -1762,10 +1815,9 @@
                     { label: '有氧热量', value: `${cardioKcal}kcal`, icon: 'fa-fire' },
                     { label: '完成动作', value: `${completedExercises}/${totalExercises}`, icon: 'fa-list-check' }
                 ].map(item => `
-                    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                        <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center mb-3"><i class="fa-solid ${item.icon} text-sm"></i></div>
-                        <div class="text-xl font-black text-gray-900">${item.value}</div>
-                        <div class="text-[11px] font-bold text-gray-400 mt-1">${item.label}</div>
+                    <div class="bg-white p-3 rounded-2xl border border-gray-100 flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0"><i class="fa-solid ${item.icon} text-sm"></i></div>
+                        <div><div class="text-lg font-black text-gray-900">${item.value}</div><div class="text-[10px] font-bold text-gray-400">${item.label}</div></div>
                     </div>
                 `).join('');
 
@@ -1774,20 +1826,20 @@
                     const record = this.state.logs[dateKey];
                     Object.keys(record.entries || {}).forEach(exKey => {
                         const ex = this.getHistoricalExercise(record, exKey);
-                        if (!ex || ex.type === 'cardio') return;
+                        if (!ex || ex.type !== 'weighted') return;
                         const rows = Array.isArray(record.entries[exKey]) ? record.entries[exKey] : [];
-                        const row = rows.find(r => rowIsCompleted(ex, r) && (r.w || r.r));
+                        const row = rows.find(r => rowIsCompleted(ex, r) && r.w);
                         if (!row || recent.some(item => item.name === ex.name)) return;
-                        recent.push({ name: ex.name, date: dateKey, w: row.w || '自重', r: row.r || '-' });
+                        recent.push({ name: ex.name, date: dateKey, status: dayStatusLabel(record.status), w: row.w || '自重', r: row.r || '-' });
                     });
                 });
                 document.getElementById('recent-progress-list').innerHTML = recent.length ? recent.slice(0, 5).map(item => `
                     <div class="flex items-center justify-between bg-white rounded-2xl border border-gray-100 p-3">
                         <div class="min-w-0">
                             <div class="font-bold text-gray-800 truncate">${escapeHtml(item.name)}</div>
-                            <div class="text-[11px] text-gray-400 mt-1">${item.date}</div>
+                            <div class="text-[11px] text-gray-400 mt-1">${escapeHtml(item.date)} · ${escapeHtml(item.status)}</div>
                         </div>
-                        <div class="text-right font-black text-gray-900">${item.w} × ${item.r}</div>
+                        <div class="text-right font-black text-gray-900">${escapeHtml(item.w)} × ${escapeHtml(item.r)}</div>
                     </div>
                 `).join('') : `<p class="text-gray-400 text-sm">暂无力量记录。</p>`;
 
@@ -1798,7 +1850,6 @@
                 this.renderTrendChart();
             },
             exportData() {
-                if (!confirm("确定导出Excel？")) return;
                 const rows = [["日期", "星期", "训练状态", "训练部位", "动作名称", "有氧方式", "组序", "重量(KG)/时长(Min)", "次数/心率", "RIR", "卡路里/备注"]];
                 let has = false;
                 Object.keys(this.state.logs).sort().forEach(dateKey => {
@@ -1828,13 +1879,20 @@
                     });
                 });
                 if (!has) { alert("暂无数据"); return; }
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "训练记录");
-                XLSX.writeFile(wb, `健身日志_${new Date().toISOString().slice(0, 10)}.xlsx`);
+                const csv = `\uFEFF${rows.map(row => row.map(escapeCsvCell).join(',')).join('\r\n')}`;
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `训练日志_${toDateKey(new Date())}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
             },
             exportBackup() {
                 const payload = {
-                    app: "博士健身日志",
+                    app: "训练日志",
                     version: 4,
                     exportedAt: new Date().toISOString(),
                     logsByDate: this.state.logs,
@@ -1845,8 +1903,10 @@
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `健身日志备份_${toDateKey(new Date())}.json`;
+                document.body.appendChild(a);
                 a.click();
-                URL.revokeObjectURL(url);
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
             },
             importBackup() {
                 document.getElementById('backup-file-input').click();
@@ -1875,18 +1935,17 @@
                             const day = Number(record.day) || getWeekday(parsedDate);
                             if (day < 1 || day > 5 || !isPlainObject(record.entries)) return;
                             const entries = {};
-                            Object.keys(record.entries).slice(0, 200).forEach(key => {
-                                const safeKey = String(key).slice(0, 100);
-                                entries[safeKey] = sanitizeRows(record.entries[key]);
-                            });
                             const exerciseSnapshots = {};
-                            if (isPlainObject(record.exerciseSnapshots)) {
-                                Object.keys(record.exerciseSnapshots).slice(0, 200).forEach(key => {
-                                    const safeKey = String(key).slice(0, 100);
-                                    const snapshot = sanitizeSnapshot(record.exerciseSnapshots[key], safeKey);
-                                    if (snapshot) exerciseSnapshots[safeKey] = snapshot;
-                                });
-                            }
+                            const usedKeys = new Set();
+                            const rawSnapshots = isPlainObject(record.exerciseSnapshots) ? record.exerciseSnapshots : {};
+                            Object.keys(record.entries).slice(0, 200).forEach((key, entryIndex) => {
+                                let safeKey = sanitizeExerciseId(key, `imported-${entryIndex}`);
+                                while (usedKeys.has(safeKey)) safeKey = createExerciseId('imported');
+                                usedKeys.add(safeKey);
+                                entries[safeKey] = sanitizeRows(record.entries[key]);
+                                const snapshot = sanitizeSnapshot(rawSnapshots[key] || rawSnapshots[safeKey], safeKey);
+                                if (snapshot) exerciseSnapshots[safeKey] = { ...snapshot, id: safeKey };
+                            });
                             cleaned[dateKey] = {
                                 version: 4,
                                 day,
@@ -1897,20 +1956,25 @@
                         });
                         if (!Object.keys(cleaned).length) throw new Error('Empty backup');
                         if (!confirm("恢复备份会覆盖当前本地数据，确定继续？")) return;
+                        let planSaved = true;
                         if (parsed.workoutPlan) {
                             this.state.workouts = normalizeWorkoutPlan(parsed.workoutPlan);
-                            this.savePlan();
+                            planSaved = this.savePlan();
                         }
                         this.state.logs = cleaned;
                         this.migrateLogs();
-                        this.persistLocal();
+                        const logsSaved = this.persistLocal();
                         this.renderAll();
-                        this.showToast("备份已恢复");
+                        this.showToast(planSaved && logsSaved ? "备份已恢复" : '备份已载入，但浏览器未能持久保存');
                     } catch (e) {
                         alert("备份文件格式不正确，无法恢复。");
                     } finally {
                         input.value = '';
                     }
+                };
+                reader.onerror = () => {
+                    alert('备份文件读取失败。');
+                    input.value = '';
                 };
                 reader.readAsText(file);
             }

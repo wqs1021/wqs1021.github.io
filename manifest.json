@@ -1,6 +1,6 @@
 {
-  "name": "博士健身日志",
-  "short_name": "健身日志",
+  "name": "训练日志",
+  "short_name": "训练日志",
   "description": "个人训练计划、记录、统计和本地备份工具。",
   "start_url": "./",
   "scope": "./",

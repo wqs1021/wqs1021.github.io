@@ -1,4 +1,4 @@
-const CACHE_NAME = 'personal-workout-log-v8';
+const CACHE_NAME = 'personal-workout-log-v9';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -8,8 +8,7 @@ const CORE_ASSETS = [
   './assets/icon-512.png',
   './assets/vendor/fontawesome/css/all.min.css',
   './assets/vendor/fontawesome/webfonts/fa-solid-900.woff2',
-  './assets/vendor/chart.umd.min.js',
-  './assets/vendor/xlsx.full.min.js'
+  './assets/vendor/chart.umd.min.js'
 ];
 
 self.addEventListener('install', event => {
@@ -31,13 +30,17 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put('./index.html', copy));
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put('./index.html', copy));
+          }
           return response;
         })
         .catch(() => caches.match('./index.html'))
@@ -49,7 +52,7 @@ self.addEventListener('fetch', event => {
     caches.match(request).then(cached => {
       const fetchPromise = fetch(request)
         .then(response => {
-          if (response && (response.ok || response.type === 'opaque')) {
+          if (response && response.ok) {
             const copy = response.clone();
             caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
           }
