@@ -702,7 +702,7 @@
                 this.loadPlan();
                 this.loadLocal();
                 this.renderAll();
-                this.registerServiceWorker();
+                this.disableServiceWorker();
                 if (!storageAvailable) this.showToast('浏览器存储不可用，请检查隐私设置');
                 document.addEventListener('keydown', event => {
                     if (event.key !== 'Escape') return;
@@ -722,23 +722,19 @@
             savePlan() {
                 return safeStorageWrite(PLAN_KEY, JSON.stringify(this.state.workouts));
             },
-            registerServiceWorker() {
-                if (!('serviceWorker' in navigator)) return;
-                let refreshing = false;
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    if (refreshing) return;
-                    refreshing = true;
-                    window.location.reload();
-                });
-
-                navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' })
-                    .then(registration => {
-                        registration.update().catch(() => {});
-                        document.addEventListener('visibilitychange', () => {
-                            if (document.visibilityState === 'visible') registration.update().catch(() => {});
-                        });
-                    })
-                    .catch(e => console.warn('Service worker registration failed', e));
+            disableServiceWorker() {
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistration('./')
+                        .then(registration => registration && registration.unregister())
+                        .catch(e => console.warn('Service worker cleanup failed', e));
+                }
+                if ('caches' in window) {
+                    caches.keys()
+                        .then(keys => Promise.all(keys
+                            .filter(key => key.startsWith('personal-workout-log-'))
+                            .map(key => caches.delete(key))))
+                        .catch(e => console.warn('App cache cleanup failed', e));
+                }
             },
             loadLocal() {
                 const daily = safeStorageRead(DATA_KEY);
